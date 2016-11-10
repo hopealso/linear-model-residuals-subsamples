@@ -1,0 +1,172 @@
+---
+title: "Statistical Analysis, MSCA 31007, Lecture 4"
+author: "Hope Foster-Reyes"
+date: "November 6, 2016"
+output: pdf_document
+geometry: margin=0.75in
+---
+
+# Analysis of Residuals of a Linear Model
+
+Understand analysis of residuals of the estimated linear model.
+
+_Notes_
+
+* _Style Guide:_ https://google.github.io/styleguide/Rguide.xml
+
+* _Packages required: none_
+
+* _Files required: ResidualAnalysisProjectData_1.csv; store in RStudio project directory_
+
+```{r settings, echo=FALSE}
+options(scipen = 5)
+```
+
+## 1 Data
+
+Import and plot the sample data.
+
+```{r import}
+# Import linear model ('lm') data
+lm.data <- read.csv("ResidualAnalysisProjectData_1.csv")
+```
+
+Look at the sample in the file LinearModelCase1.csv. The first rows and the X-Y plot are:
+
+```{r q1}
+head(lm.data)
+```
+
+Plot the data.
+
+```{r q1-plot}
+plot(lm.data$Input, lm.data$Output, ylim = c(-5, 5))
+```
+
+## 2 Fitting the Linear Model
+
+Estimate a linear model using function `lm()`. Examine the output of the function.
+
+```{r q2}
+lm.estimate <- lm(Output ~ Input, data = lm.data)
+names(lm.estimate)
+```
+
+### 2.1 Object `lm()`
+
+Explore the elements of the object `lm`:
+
+#### 1. Coefficients
+
+The coefficients are our estimate of the slope and intercept of the estimated linear model. We can output our results from our `lm.estimate` object. If we plot these as slope and intercept (while maintaining the same axis), we can compare our plot to the plot above of the data provided:
+
+```{r q2.1-coeff}
+lm.estimate$coefficients
+
+lm.est.b <- lm.estimate$coefficients[1]
+lm.est.a <- lm.estimate$coefficients[2]
+
+lm.est.y <- lm.est.a * lm.data$Input + lm.est.b
+plot(lm.data$Input, lm.est.y, ylim = c(-5, 5))
+```
+
+#### 2. Residuals (make a plot). How are the residuals calculated?
+
+We calculate the residuals by subtracting our predicted linear Y values from the actual Y values in our sample, giving us the "error" or randomness in Y. We will refer to these residuals as Epsilon or `$\varepsilon$ as per the following equation:
+
+$Y = aX + b + \varepsilon$
+
+```{r q2.1-residuals}
+lm.eps <- lm.data$Output - lm.est.y
+plot(lm.eps)
+```
+
+#### 3. Investigate: What are `fitted.values` in our `lm()` output?
+
+We might suspect from the name that "fitted values" refers to some sort of estimate on Y. Considering that the goal of `lm()` is to fit our data in a linear model, could it be that the fitted values are the pure values of Y from the linear relationship, without residuals? Let's test this.
+
+```{r q2.1-fitted}
+head(lm.estimate$fitted.values)
+head(lm.est.y)
+
+(all.equal(as.vector(lm.estimate$fitted.values), lm.est.y))
+```
+
+We have confirmed that `lm()` output of `fitted.values` represents the sum of the intercept coefficient and the input (or predictor variable) times the slope coefficient, in other words our resultant output or response variable of our linear function based on our estimated coefficients, without residuals.
+
+### 2. The `summary()` Output
+
+Look at the summary.
+
+```{r q2.2}
+(lm.est.summary <- summary(lm.estimate))
+```
+
+Let's interpret the summary.
+
+Our intial `Call` section simply reminds us of our call to the function, which provides the data and specifies which variable is our independent (predictor or input variable) and which is our dependent (response or output variable). Note that we denote this by first listing our dependent, a tilde symbol, and our independent.
+
+This is followed bye the `Residuals` section which provides the five number summary of the residuals. What may be interesting to us here is that the summary is nearly symmetrical, and the quartiles seem to divide the data nearly evenly, as opposed to the 1Q and 3Q values being closer to the Median as you might expect in a normal distribution. A quick boxplot confirms that the shape, while not uniform, appears to be more uniform than a normal distribution:
+
+```{r q2.2-boxplot}
+boxplot(lm.eps)
+hist(lm.eps)
+```
+
+Next, the `Coefficients` section lists our estimated linear coefficients. The first will always be our Intercept (which, essentially, is a coefficient to the number 1), followed by the coefficients of our remaining predictor variables. In this case there is only one predictor variable, which we labeled Input.
+
+??? XXX ???
+
+What is `summary(lm.est)$sigma`?
+
+```{r q2.2-sigma}
+names(lm.est.summary)
+lm.est.summary$sigma
+lm.est.summary$sigma^2
+```
+
+In this case "sigma" refers to the standard deviation of our residuals, also known as the residual standard deviation. It describes the amount that the residuals vary or spread from zero and hence the amount that our output variable varies or spreads from a pure linear relationship with our input variable(s). For a simple Gaussian residual, this would be the $\sigma$ value in the below equation:
+
+$Y = aX + b + \varepsilon$
+
+$\varepsilon \sim Norm(0, \sigma)$
+
+Check how `sigma` is calculated in the summary object by reproducing the square of it:
+
+1. Using `var()` (the resulting variable is sigmaSquared.byVar)
+
+```{r q2.2-manual-1}
+lm.sigma.sq.byvar <- var(lm.eps)
+```
+
+2. Using only `sum()` (the resulting variable is sigmaSquared.bySum)
+
+```{r q2.2-manual-1}
+#XXX ???
+lm.sigma.sq.bysum <- sum(lm.eps - mean(lm.eps))^2
+```
+
+Compare the two calculations with the `summary` output:
+
+```{r q2.2-confirm}
+c(lm.sigma.sq.byvar, lm.sigma.sq.bysum, lm.est.summary$sigma^2)
+```
+
+## 3 Analysis of Residuals
+
+### 3.1 Residuals of the model
+
+Observe the residuals, plot them against the input. Also plot their probability density in comparison with the normal density.
+
+```{r 3.1}
+lm.est.eps <- lm.estimate$residuals
+plot(lm.data$Input, lm.est.eps)
+
+lm.est.eps.density <- density(lm.est.eps)
+plot(lm.est.eps.density, ylim = c(0, 0.5))
+lines(lm.est.eps.density$x, 
+      dnorm(lm.est.eps.density$x, mean = mean(lm.est.eps), sd = sd(lm.est.eps)))
+```
+
+***What do you conclude from the analysis of residuals?***
+
