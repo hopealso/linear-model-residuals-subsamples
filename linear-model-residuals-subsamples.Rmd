@@ -14,12 +14,13 @@ _Notes_
 
 * _Style Guide:_ https://google.github.io/styleguide/Rguide.xml
 
-* _Packages required: none_
+* _Packages required: caret_
 
 * _Files required: ResidualAnalysisProjectData_1.csv; store in RStudio project directory_
 
 ```{r settings, echo=FALSE}
 options(scipen = 5)
+suppressWarnings(library(caret))
 ```
 
 ## 1 Data
@@ -197,25 +198,121 @@ Create a selection variable which estimates switching between the two subsamples
 select.seq.unscrambled <- as.integer(lm.est.eps > 0)
 head(select.seq.unscrambled, 30)
 
-#lm.sub.pos <- apply(seq_along(lm.data), function(i){
-#  switch(select.seq.unscrambled[i], lm.data[i,], NULL)
-#}) 
-test <- function (i) switch(select.seq.unscrambled[i], cbind(NA, NA), lm.data[i,])
-lm.sub.pos <- sapply(1:2, function(i){
-  switch(select.seq.unscrambled[i], lm.data[i,1])
-})
-lm.sub.pos <- apply(seq_along(select.seq.unscrambled), 1, function(i) {lm.data[i, ]}) 
-
-test <- sapply(seq_along(select.seq.unscrambled), function(i) {
-  switch(select.seq.unscrambled[i], lm.data[i, 1])
-})
-
-ChooseRow <- function(j) {
+ChoosePos <- function(j) {
   vapply(seq_along(select.seq.unscrambled), 
          function(i) {switch(select.seq.unscrambled[i] + 1, NA, lm.data[i, j])},
          numeric(1))
 }
 
-lm.sub.pos <- sapply(seq_along(lm.data), ChooseRow)
+ChooseNeg <- function(j) {
+  vapply(seq_along(select.seq.unscrambled), 
+         function(i) {switch(select.seq.unscrambled[i] + 1, lm.data[i, j], NA)},
+         numeric(1))
+}
+
+lm.sub.pos <- sapply(seq_along(lm.data), ChoosePos)
+lm.sub.neg <- sapply(seq_along(lm.data), ChooseNeg)
+
+head(cbind(lm.sub.pos, lm.sub.neg), 30)
+
+# Plot the two clusters
+matplot(lm.data$Input, cbind(lm.sub.pos[, 2], lm.sub.neg[,2]), 
+        type = "p", col = c("green", "blue"), pch = 19, ylab = "Separated Subsamples")
+
+plot(select.seq.unscrambled[1:100], type = "s")
 ```
 
+??? XXX ???
+
+## 4 Estimating models for subsamples
+
+### 4.1 Fitting models
+
+Now estimate the linear models from the subsamples.
+
+```{r q4.1}
+lm.sub.pos.estimate <- lm(Output ~ Input, 
+                          data = data.frame(Input = lm.sub.pos[,1], Output = lm.sub.pos[,2]))
+lm.sub.neg.estimate <- lm(Output ~ Input, 
+                          data = data.frame(Input = lm.sub.neg[,1], Output = lm.sub.neg[,2]))
+lm.sub.pos.est.summary <- summary(lm.sub.pos.estimate)
+lm.sub.neg.est.summary <- summary(lm.sub.neg.estimate)
+
+lm.sub.pos.est.summary$coefficients
+lm.sub.pos.est.summary$sigma
+lm.sub.pos.est.summary$df
+lm.sub.pos.est.summary$r.squared
+lm.sub.pos.est.summary$adj.r.squared
+
+lm.sub.neg.est.summary$coefficients
+lm.sub.neg.est.summary$sigma
+lm.sub.neg.est.summary$df
+lm.sub.neg.est.summary$r.squared
+lm.sub.neg.est.summary$adj.r.squared
+```
+
+And write a summary comparing the fit of the subsamples to the whole sample:
+
+* For the sigma parameters:
+
+```{r q4.1-sigma}
+c(lm.est.summary$sigma,
+  lm.sub.pos.est.summary$sigma,
+  lm.sub.neg.est.summary$sigma)
+```
+
+For the $\rho^2\:
+
+```{r q4.1-rho.sq}
+c(lm.est.summary$r.squared,
+  lm.sub.pos.est.summary$r.squared,
+  lm.sub.neg.est.summary$r.squared)
+```
+
+For the F-statistics:
+
+```{r q4.1-f}
+rbind(LinearModel=lm.est.summary$fstatistic,
+      LinearModelPositive=lm.sub.pos.est.summary$fstatistic,
+      LinearModelNegative=lm.sub.neg.est.summary$fstatistic)
+```
+
+Here is how we can calculate p-values of F-test using cumulative probability function of F-distribution:
+
+```{r q4.1-f-manual}
+c(LinearModel=pf(lm.est.summary$fstatistic[1], 
+                 lm.est.summary$fstatistic[2], 
+                 lm.est.summary$fstatistic[3],lower.tail = FALSE),
+  LinearModelPositive=pf(lm.sub.pos.est.summary$fstatistic[1], 
+                         lm.sub.pos.est.summary$fstatistic[2], 
+                         lm.sub.pos.est.summary$fstatistic[3],lower.tail = FALSE),
+  LinearModelNegative=pf(lm.sub.neg.est.summary$fstatistic[1], 
+                         lm.sub.neg.est.summary$fstatistic[2], 
+                         lm.sub.neg.est.summary$fstatistic[3],lower.tail = FALSE))
+```
+
+The numbers may not look exactly the same as in `summary()` because of the precision limitation.
+
+Compare the combined residuals of the two separated models with the residuals of our original estimated model.
+
+```{r q4.1-plot}
+# Plot residuals
+matplot(cbind(MixedModelResiduals=c(lm.sub.pos.est.summary$residuals,
+                                    lm.sub.neg.est.summary$residuals),
+              SingleModelResiduals=lm.est.summary$residuals),
+        type="p",pch=16,ylab="Residuals before and after unscrambling")
+```
+
+# Estimate standard deviations
+
+```{r q4.1-sd}
+apply(cbind(MixedModelResiduals=c(lm.sub.pos.est.summary$residuals,
+                                   lm.sub.neg.est.summary$residuals),
+            SingleModelResiduals=lm.est.summary$residuals),2,sd)
+```
+
+***What is the difference between the quality of fit?***
+
+***What is the difference between the two estimated models?***
+
+***Try to guess how the model data were simulated and with what parameters?***
