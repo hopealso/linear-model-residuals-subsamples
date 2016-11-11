@@ -194,13 +194,28 @@ Separate the given sample into 2 subsamples:
 Create a selection variable which estimates switching between the two subsamples (a value of 1 in this variable corresponds to the positive residual case, and a value of 0 corresponds to the negative residual case).
 
 ```{r q3.2-2}
-# You can use 0 and 1
-select.seq.unscrambled <- as.numeric(lm.est.eps > 0)
+select.seq.unscrambled <- as.integer(lm.est.eps > 0)
 head(select.seq.unscrambled, 30)
 
-# Or you can just keep it T and F
-select.seq.unscrambled <- lm.est.eps > 0
+#lm.sub.pos <- apply(seq_along(lm.data), function(i){
+#  switch(select.seq.unscrambled[i], lm.data[i,], NULL)
+#}) 
+test <- function (i) switch(select.seq.unscrambled[i], cbind(NA, NA), lm.data[i,])
+lm.sub.pos <- sapply(1:2, function(i){
+  switch(select.seq.unscrambled[i], lm.data[i,1])
+})
+lm.sub.pos <- apply(seq_along(select.seq.unscrambled), 1, function(i) {lm.data[i, ]}) 
 
-lm.sub.pos <- lm.data[select.seq.unscrambled,]
+test <- sapply(seq_along(select.seq.unscrambled), function(i) {
+  switch(select.seq.unscrambled[i], lm.data[i, 1])
+})
+
+ChooseRow <- function(j) {
+  vapply(seq_along(select.seq.unscrambled), 
+         function(i) {switch(select.seq.unscrambled[i] + 1, NA, lm.data[i, j])},
+         numeric(1))
+}
+
+lm.sub.pos <- sapply(seq_along(lm.data), ChooseRow)
 ```
 
