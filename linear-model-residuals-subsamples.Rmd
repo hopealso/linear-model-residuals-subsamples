@@ -92,7 +92,7 @@ head(lm.est.y)
 (all.equal(as.vector(lm.estimate$fitted.values), lm.est.y))
 ```
 
-We have confirmed that `lm()` output of `fitted.values` represents the sum of the intercept coefficient and the input (or predictor variable) times the slope coefficient, in other words our resultant output or response variable of our linear function based on our estimated coefficients, without residuals.
+We have confirmed that the `lm()` output of `fitted.values` represents the sum of the intercept coefficient and the input (or predictor) variable multiplied by the slope coefficient, in other words our resultant output or response variable of our linear function based on our estimated coefficients, without residuals.
 
 ### 2. The `summary()` Output
 
@@ -104,16 +104,20 @@ Look at the summary.
 
 Let's interpret the summary.
 
-Our intial `Call` section simply reminds us of our call to the function, which provides the data and specifies which variable is our independent (predictor or input variable) and which is our dependent (response or output variable). Note that we denote this by first listing our dependent, a tilde symbol, and our independent.
+The `Call` section simply reminds us of our call to the function, which provides the data and specifies which variable is our independent (predictor or input variable) and which is our dependent (response or output variable). Note that we denote this by first listing our dependent variable, a tilde symbol, followed by our independent variable.
 
 This is followed bye the `Residuals` section which provides the five number summary of the residuals. What may be interesting to us here is that the summary is nearly symmetrical, and the quartiles seem to divide the data nearly evenly, as opposed to the 1Q and 3Q values being closer to the Median as you might expect in a normal distribution. A quick boxplot confirms that the shape, while not uniform, appears to be more uniform than a normal distribution:
 
-```{r q2.2-boxplot}
+```{r q2.2-boxplot, fig.width=5.2, fig.height=3.6}
 boxplot(lm.eps)
 hist(lm.eps)
 ```
 
-Next, the `Coefficients` section lists our estimated linear coefficients. The first will always be our Intercept (which, essentially, is a coefficient to the number 1), followed by the coefficients of our remaining predictor variables. In this case there is only one predictor variable, which we labeled Input.
+Next, the `Coefficients` section lists our estimated linear coefficients. The first will always be our Intercept (which, essentially, is a coefficient to the number 1), followed by the coefficients of our remaining predictor variables. In this case there is only one predictor variable, which we labeled Input. Our Input coefficient, is positive, leading to a positive correlation between Input (X) and Output (Y), which is also demonstrated by our plots above.
+
+It is worth noting that [R documentation](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/sigma.html) states that the term "residual standard error" that we see in our `summary` output is a misnomer, and the proper term here is residual standard deviation.
+
+Our summary output also includes this calculation of the residual standard deviation, or $\sigma$ as described below, as well as R-squared (also notated as $r^{2}$ or $\rho^{2}$) which is our "coefficient of determination" or "squared correlation coefficient". Whereas the correlation coefficient, "r" measures the strength and the direction of a linear relationship between two variables, the square of the correlation coefficient, "r squared", which we see in our summary, measures the proportion of our data that is explained by the linear relationship. In this case roughly 83% of the variation in our Output is explained by our linear model.
 
 ??? XXX ???
 
@@ -125,7 +129,7 @@ lm.est.summary$sigma
 lm.est.summary$sigma^2
 ```
 
-In this case "sigma" refers to the standard deviation of our residuals, also known as the residual standard deviation. It describes the amount that the residuals vary or spread from zero and hence the amount that our output variable varies or spreads from a pure linear relationship with our input variable(s). For a simple Gaussian residual, this would be the $\sigma$ value in the below equation:
+In this case "sigma" refers to the standard deviation of our residuals, also known as the residual standard deviation. It describes the amount that the residuals vary or spread from their mean, which is theoretically zero, and hence the amount that our output variable varies or spreads from a pure linear relationship with our input variable(s). For a simple Gaussian residual, this would be the $\sigma$ value in the below equation:
 
 $Y = aX + b + \varepsilon$
 
@@ -141,7 +145,7 @@ lm.sigma.sq.byvar <- var(lm.eps)
 
 2. Using only `sum()` (the resulting variable is sigmaSquared.bySum)
 
-```{r q2.2-manual-1}
+```{r q2.2-manual-2}
 #XXX ???
 lm.sigma.sq.bysum <- sum(lm.eps - mean(lm.eps))^2
 ```
@@ -169,4 +173,34 @@ lines(lm.est.eps.density$x,
 ```
 
 ***What do you conclude from the analysis of residuals?***
+
+An observation of the density of the residuals is multi-modal and seems to indicate that we may be looking at two normal distributions.
+
+### 3.2 Clustering the Sample
+
+Calculate the mean values of negative residuals and positive residuals.
+
+```{r q3.2-1}
+c(Left.Mean = mean(lm.est.eps[lm.est.eps < 0]), 
+  Right.Mean = mean(lm.est.eps[lm.est.eps > 0]))
+```
+
+Separate the given sample into 2 subsamples:
+
+* One in which the residuals are below zero
+
+* One in which they are above zero
+
+Create a selection variable which estimates switching between the two subsamples (a value of 1 in this variable corresponds to the positive residual case, and a value of 0 corresponds to the negative residual case).
+
+```{r q3.2-2}
+# You can use 0 and 1
+select.seq.unscrambled <- as.numeric(lm.est.eps > 0)
+head(select.seq.unscrambled, 30)
+
+# Or you can just keep it T and F
+select.seq.unscrambled <- lm.est.eps > 0
+
+lm.sub.pos <- lm.data[select.seq.unscrambled,]
+```
 
