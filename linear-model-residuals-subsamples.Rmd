@@ -251,28 +251,43 @@ To create a confusion matrix in this case, we would call the function `confusion
 
 `cm <- confusionMatrix(select.seq.unscrambled, select.seq.true)$table`
 
-Its output would look something like the following:
-
-Group | Actual True | Actual False
--|-------------|--------------
-Predicted True | 400 | 90
-Predicted False | 20 | 410
-
-Let's hard code these values:
+Let's hard code a hypothetical output of the above function:
 
 ```{r q3.3}
-cm <- matrix(c(400, 90, 20, 410), ncol = 2, byrow = T, 
-             dimnames = list(c("Predicted.T", "Predicted.F"),
-                             c("Actual.T", "Actual.F")))
+cm <- as.table(matrix(c(450, 42, 50, 458), ncol = 2, byrow = T, 
+               dimnames = list(c("Pred.T", "Pred.F"),
+                               c("Act.T", "Act.F"))))
 cm
 ```
 
-We can derive the following from the elements `cm(Predicted, Actual)` of the resultant matrix:
+The the elements $C(Predicted, Actual)$ of the resultant table are:
 
-* Number of True Negatives: `cm(0,0)`
-* Number of True Positives: `cm(1,1)`
-* Number of False Negatives: `cm(0,1)`
-* Number of False Positives: `cm(1,0)`
+* Number of True Negatives: $C(0,0)$
+* Number of True Positives: $C(1,1)$
+* Number of False Negatives: $C(0,1)$
+* Number of False Positives: $C(1,0)$
+
+Now let's demonstrate how to calculate conditional probabilities based on our confusion matrix.
+
+There are several characteristics of prediction quality with following definitions:
+
+* Accuracy: $P(Prediction\ correct)$
+* Sensitivity: $P(Pred=1|Act=1)$
+* Specificity: $P(Pred=0|Act=0)$
+* Balanced Accuracy: $\frac{Sensitivity + Specificity}{2}$
+
+Calculate accuracy, sensitivity, specificity and balanced accuracy for the confusion table above.
+
+```{r q3.3-prob}
+cm.accuracy <- (cm["Pred.T", "Act.T"] + cm["Pred.F", "Act.F"]) / 1000
+cm.sensitivity <- cm["Pred.T", "Act.T"] / sum(cm[,"Act.T"])
+cm.specificity <- cm["Pred.F", "Act.F"] / sum(cm[, "Act.F"])
+cm.balanced <- (cm.sensitivity + cm.specificity) / 2
+(cm.out <- c(Accuracy = cm.accuracy,
+             Sensitivity = cm.sensitivity, 
+             Specificity = cm.specificity,
+             Balanced = cm.balanced))
+```
 
 ## 4 Estimating models for subsamples
 
