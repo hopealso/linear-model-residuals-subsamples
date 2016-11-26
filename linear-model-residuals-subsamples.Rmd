@@ -28,19 +28,19 @@ Import and plot the sample data.
 
 ```{r import}
 # Import linear model ('lm') data
-lm.data <- read.csv("ResidualAnalysisProjectData_1.csv")
+sample.data <- read.csv("ResidualAnalysisProjectData_1.csv")
 ```
 
 Look at the sample in the file LinearModelCase1.csv. The first rows and the X-Y plot are:
 
 ```{r q1}
-head(lm.data)
+head(sample.data)
 ```
 
 Plot the data.
 
 ```{r q1-plot}
-plot(lm.data$Input, lm.data$Output, ylim = c(-5, 5))
+plot(sample.data$Input, sample.data$Output, ylim = c(-5, 5))
 ```
 
 ## 2 Fitting the Linear Model
@@ -48,7 +48,7 @@ plot(lm.data$Input, lm.data$Output, ylim = c(-5, 5))
 Estimate a linear model using function `lm()`. Examine the output of the function.
 
 ```{r q2}
-lm.estimate <- lm(Output ~ Input, data = lm.data)
+lm.estimate <- lm(Output ~ Input, data = sample.data)
 names(lm.estimate)
 ```
 
@@ -66,8 +66,8 @@ lm.estimate$coefficients
 lm.est.b <- lm.estimate$coefficients[1]
 lm.est.a <- lm.estimate$coefficients[2]
 
-lm.est.y <- lm.est.a * lm.data$Input + lm.est.b
-plot(lm.data$Input, lm.est.y, ylim = c(-5, 5))
+lm.est.y <- lm.est.a * sample.data$Input + lm.est.b
+plot(sample.data$Input, lm.est.y, ylim = c(-5, 5))
 ```
 
 #### 2. Residuals (make a plot). How are the residuals calculated?
@@ -77,13 +77,17 @@ We calculate the residuals by subtracting our predicted linear Y values from the
 $Y = aX + b + \varepsilon$
 
 ```{r q2.1-residuals}
-lm.est.eps <- lm.data$Output - lm.est.y
-plot(lm.est.eps)
+lm.est.eps <- sample.data$Output - lm.est.y
+# The manual calculation and lm() output are nearly identical
+(mean(lm.estimate$residuals - lm.est.eps))
+(sum(lm.estimate$residuals - lm.est.eps))
+
+plot(lm.estimate$residuals)
 ```
 
 #### 3. Investigate: What are `fitted.values` in our `lm()` output?
 
-We might suspect from the name that "fitted values" refers to some sort of estimate on Y. Considering that the goal of `lm()` is to fit our data in a linear model, could it be that the fitted values are the pure values of Y from the linear relationship, without residuals? Let's test this.
+We might suspect, from the name, that "fitted values" refers to some sort of estimate on Y. Considering that the goal of `lm()` is to fit our data to a linear model, could it be that the fitted values are the pure values of Y from the linear relationship, without residuals? Let's test this.
 
 ```{r q2.1-fitted}
 head(lm.estimate$fitted.values)
@@ -102,26 +106,49 @@ Look at the summary.
 (lm.est.summary <- summary(lm.estimate))
 ```
 
-Let's interpret the summary.
+***Let's interpret the summary.***
 
-The `Call` section simply reminds us of our call to the function, which provides the data and specifies which variable is our independent (predictor or input variable) and which is our dependent (response or output variable). Note that we denote this by first listing our dependent variable, a tilde symbol, followed by our independent variable.
+#### Call
 
-This is followed bye the `Residuals` section which provides the five number summary of the residuals. What may be interesting to us here is that the summary is nearly symmetrical, and the quartiles seem to divide the data nearly evenly, as opposed to the 1Q and 3Q values being closer to the Median as you might expect in a normal distribution. A quick boxplot confirms that the shape, while not uniform, appears to be more uniform than a normal distribution:
+The `Call` section simply reminds us of our call to the function, which provides the data and specifies which variable is our independent (predictor or input variable) and which is our dependent (response or output variable). Note that we denote this by first listing our dependent variable, followed by a tilde symbol, and finally our independent variable.
+
+#### Residuals
+
+This is followed by the `Residuals` section which provides the five number summary of the residuals. What may be interesting to us here is that the summary is nearly symmetrical, and the quartiles seem to divide the data nearly evenly, as opposed to the 1Q and 3Q values being much closer to the Median as you might expect in a normal distribution. A quick boxplot confirms that the shape, while not uniform, appears to be more uniform than a normal distribution:
 
 ```{r q2.2-boxplot, fig.width=5.2, fig.height=3.6}
-boxplot(lm.est.eps)
+par(mfrow=c(1,3))
+boxplot(lm.est.eps, main="Sample Epsilon")
+boxplot(rnorm(5000), main="Standard Normal Dist.")
+boxplot(runif(500, -2, 2), main="Uniform Dist.")
+par(mfrow=c(1,1))
+
 hist(lm.est.eps)
 ```
 
+#### Coefficients
+
 Next, the `Coefficients` section lists our estimated linear coefficients. The first will always be our Intercept (which, essentially, is a coefficient to the number 1), followed by the coefficients of our remaining predictor variables. In this case there is only one predictor variable, which we labeled Input. Our Input coefficient, is positive, leading to a positive correlation between Input (X) and Output (Y), which is also demonstrated by our plots above.
 
-It is worth noting that [R documentation](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/sigma.html) states that the term "residual standard error" that we see in our `summary` output is a misnomer, and the proper term here is residual standard deviation.
+The `Pr(>|t|)` column of the Coefficients section tells us the probability of obtaining our data if the null hypothesis were true, in this case if the coefficients were actually zero. In our case the p-value of $a$ or our Input coefficient is quite low and statistically significant. We can be less confident of our intercept, with a p-value of 0.234.
 
-Our summary output also includes this calculation of the residual standard deviation, or $\sigma$ as described below, as well as R-squared (also notated as $r^{2}$ or $\rho^{2}$) which is our "coefficient of determination" or "squared correlation coefficient". Whereas the correlation coefficient, "r" measures the strength and the direction of a linear relationship between two variables, the square of the correlation coefficient, "r squared", which we see in our summary, measures the proportion of our data that is explained by the linear relationship. In this case roughly 83% of the variation in our Output is explained by our linear model.
+#### Model
 
-??? XXX ???
+It is worth noting that [R documentation](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/sigma.html) states that the term "residual standard error" that we see in our `summary` output is a misnomer, and the proper term is residual standard deviation.
 
-What is `summary(lm.est)$sigma`?
+Our summary output includes this calculation of the residual standard deviation, or $\sigma$ as described below, as well as R-squared (also notated as $r^{2}$ or $\rho^{2}$) which is our "coefficient of determination" or "squared correlation coefficient". Whereas the correlation coefficient, "r" measures the strength and the direction of a linear relationship between two variables, the square of the correlation coefficient, "r squared", which we see in our summary, measures the proportion of our data that is explained by the linear relationship. Thus r-squared can be considered one estimate of the "predictive power" of our model. 
+
+In this case roughly 83% of the variation in our Output is explained by our linear model of:
+
+$Output = `r round(lm.est.a, 3)` \cdot Input + `r round(lm.est.b, 3)`$
+
+The p-value of the model itself is found in the F-statistic section. Our p-value is quite low indicating statistical significance in our linear model.
+
+Thus our model explains roughtly 83% of our variation and has a statistically significant relationship between Input and Output, however our intercept estimate is not statistically significant. In other words, we are quite confident of the slope of our line, yet we're not so sure about its intercept. 
+
+The wide gap in p-value between slope and intercept is worth further investigation.
+
+***What is `summary(lm.est)$sigma`?***
 
 ```{r q2.2-sigma}
 names(lm.est.summary)
@@ -135,25 +162,33 @@ $Y = aX + b + \varepsilon$
 
 $\varepsilon \sim Norm(0, \sigma)$
 
+***And finally we'll test calculation of sigma, the residual standard deviation:***
+
 Check how `sigma` is calculated in the summary object by reproducing the square of it:
 
-1. Using `var()` (the resulting variable is sigmaSquared.byVar)
+1. Using `var()` 
 
 ```{r q2.2-manual-1}
-lm.sigma.sq.byvar <- var(lm.est.eps)
+sample.n <- nrow(sample.data)
+lm.sigma.sq.byvar <- var(lm.estimate$residuals)
+
+# Convert degrees of freedom
+lm.sigma.sq.byvar = lm.sigma.sq.byvar * (sample.n - 1) / lm.estimate$df.residual
 ```
 
-2. Using only `sum()` (the resulting variable is sigmaSquared.bySum)
+2. Using only `sum()` 
 
 ```{r q2.2-manual-2}
-#XXX ???
-lm.sigma.sq.bysum <- sum(lm.est.eps - mean(lm.est.eps))^2
+lm.eps.deviation <- lm.estimate$residuals - mean(lm.estimate$residuals)
+lm.sigma.sq.bysum <- sum(lm.eps.deviation^2) / lm.estimate$df.residual
 ```
 
 Compare the two calculations with the `summary` output:
 
 ```{r q2.2-confirm}
-c(lm.sigma.sq.byvar, lm.sigma.sq.bysum, lm.est.summary$sigma^2)
+c("By Var()" = lm.sigma.sq.byvar, 
+  "By Sum()" = lm.sigma.sq.bysum, 
+  "From Model" = lm.est.summary$sigma^2)
 ```
 
 ## 3 Analysis of Residuals
@@ -164,7 +199,7 @@ Observe the residuals, plot them against the input. Also plot their probability 
 
 ```{r 3.1}
 lm.est.eps <- lm.estimate$residuals
-plot(lm.data$Input, lm.est.eps)
+plot(sample.data$Input, lm.est.eps)
 
 lm.est.eps.density <- density(lm.est.eps)
 plot(lm.est.eps.density, ylim = c(0, 0.5))
@@ -174,7 +209,7 @@ lines(lm.est.eps.density$x,
 
 ***What do you conclude from the analysis of residuals?***
 
-An observation of the density of the residuals is multi-modal and seems to indicate that we may be looking at two different normal distributions.
+An observation of the density of the residuals is multi-modal and seems to indicate that we may be looking at two different normal distributions, rather than one.
 
 ### 3.2 Clustering the Sample
 
@@ -199,23 +234,23 @@ head(select.seq.unscrambled, 30)
 
 ChoosePos <- function(j) {
   vapply(seq_along(select.seq.unscrambled), 
-         function(i) {switch(select.seq.unscrambled[i] + 1, NA, lm.data[i, j])},
+         function(i) {switch(select.seq.unscrambled[i] + 1, NA, sample.data[i, j])},
          numeric(1))
 }
 
 ChooseNeg <- function(j) {
   vapply(seq_along(select.seq.unscrambled), 
-         function(i) {switch(select.seq.unscrambled[i] + 1, lm.data[i, j], NA)},
+         function(i) {switch(select.seq.unscrambled[i] + 1, sample.data[i, j], NA)},
          numeric(1))
 }
 
-lm.subset1 <- sapply(seq_along(lm.data), ChoosePos)
-lm.subset2 <- sapply(seq_along(lm.data), ChooseNeg)
+lm.subset1 <- sapply(seq_along(sample.data), ChoosePos)
+lm.subset2 <- sapply(seq_along(sample.data), ChooseNeg)
 
 head(cbind(lm.subset1, lm.subset2), 30)
 
 # Plot the two clusters
-matplot(lm.data$Input, cbind(lm.subset1[, 2], lm.subset2[,2]), 
+matplot(sample.data$Input, cbind(lm.subset1[, 2], lm.subset2[,2]), 
         type = "p", col = c("green", "blue"), pch = 19, ylab = "Separated Subsamples")
 
 plot(select.seq.unscrambled[1:100], type = "s")
@@ -345,15 +380,18 @@ rbind(LinearModel=lm.est.summary$fstatistic,
 Here is how we can calculate p-values of F-test using cumulative probability function of F-distribution:
 
 ```{r q4.1-f-manual}
-c(LinearModel=pf(lm.est.summary$fstatistic[1], 
-                 lm.est.summary$fstatistic[2], 
-                 lm.est.summary$fstatistic[3],lower.tail = FALSE),
-  LinearModelPositive=pf(lm.subset1.est.summary$fstatistic[1], 
-                         lm.subset1.est.summary$fstatistic[2], 
-                         lm.subset1.est.summary$fstatistic[3],lower.tail = FALSE),
-  LinearModelNegative=pf(lm.subset2.est.summary$fstatistic[1], 
-                         lm.subset2.est.summary$fstatistic[2], 
-                         lm.subset2.est.summary$fstatistic[3],lower.tail = FALSE))
+lm.est.pf <- pf(lm.est.summary$fstatistic[1], 
+                lm.est.summary$fstatistic[2], 
+                lm.est.summary$fstatistic[3],lower.tail = FALSE)
+lm.subset1.est.pf <- pf(lm.subset1.est.summary$fstatistic[1], 
+                        lm.subset1.est.summary$fstatistic[2], 
+                        lm.subset1.est.summary$fstatistic[3],lower.tail = FALSE)
+lm.subset2.est.pf <- pf(lm.subset2.est.summary$fstatistic[1], 
+                        lm.subset2.est.summary$fstatistic[2], 
+                        lm.subset2.est.summary$fstatistic[3],lower.tail = FALSE)
+c(LinearModel = lm.est.pf,
+  LinearModelPositive = lm.subset1.est.pf,
+  LinearModelNegative = lm.subset2.est.pf)
 ```
 
 The numbers may not look exactly the same as in `summary()` because of the precision limitation.
@@ -372,6 +410,36 @@ apply(cbind(MixedModelResiduals=c(lm.subset1.est.summary$residuals,
                                    lm.subset2.est.summary$residuals),
             SingleModelResiduals=lm.est.summary$residuals),2,sd)
 ```
+
+And let's do a final output table to make the data easier to compare:
+
+```{r q4.1-table}
+t1.2 <- round(lm.est.summary$sigma, 4)
+t1.3 <- round(lm.subset1.est.summary$sigma, 4)
+t1.4 <- round(lm.subset2.est.summary$sigma, 4)
+t2.2 <- round(lm.est.summary$r.squared, 4)
+t2.3 <- round(lm.subset1.est.summary$r.squared, 4)
+t2.4 <- round(lm.subset2.est.summary$r.squared, 4)
+t3.2 <- round(lm.est.summary$coefficients[1,4], 4)
+t3.3 <- round(lm.subset1.est.summary$coefficients[1,4], 4)
+t3.4 <- round(lm.subset2.est.summary$coefficients[1,4], 4)
+t4.2 <- round(lm.est.summary$coefficients[2,4], 4)
+t4.3 <- round(lm.subset1.est.summary$coefficients[2,4], 4)
+t4.4 <- round(lm.subset2.est.summary$coefficients[2,4], 4)
+t5.2 <- round(lm.est.summary$fstatistic[1])
+t5.3 <- round(lm.subset1.est.summary$fstatistic[1])
+t5.4 <- round(lm.subset2.est.summary$fstatistic[1])
+```
+
+
+Estimate | Linear Model | Linear Model Positive | Linear Model Negative
+---------|--------------|-----------------------|----------------------
+$\sigma_{\varepsilon}$ | `r t1.2` | `r t1.3` | `r t1.4`
+$\rho^{2}$ | `r t2.2` | `r t2.3` | `r t2.4`
+`r dimnames(lm.est.summary$coefficients)[[1]][1]` p-value | `r t3.2` | `r t3.3` | `r t3.4`
+`r dimnames(lm.est.summary$coefficients)[[1]][2]` p-value | `r t4.2` | `r t4.3` | `r t4.4`
+F-statistic | `r t5.2` | `r t5.3` | `r t5.4`
+F p-value | `r round(lm.est.pf, 4)` | `r round(lm.subset1.est.pf, 4)` | `r round(lm.subset2.est.pf, 4)`
 
 ***What is the difference between the quality of fit?***
 
