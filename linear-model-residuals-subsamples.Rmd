@@ -452,3 +452,59 @@ F p-value | `r round(lm.est.pf, 4)` | `r round(lm.subset1.est.pf, 4)` | `r round
 ***Try to guess how the model data were simulated and with what parameters?***
 
 ??? XXX ???
+
+## Test
+
+```{r test}
+dat <- read.table('Week4_Test_Sample.csv', header=TRUE)
+
+test.fit <- lm(Y~X, dat)
+test.fit.summary <- summary(test.fit)
+test.fit.summary
+
+plot(dat$X, dat$Y)
+y.est <- dat$X * coef(test.fit)[2] + coef(test.fit)[1]
+plot(dat$X, y.est)
+
+test.eps <- dat$Y - y.est
+par(mfrow=c(1,2))
+plot(test.eps)
+boxplot(test.eps)
+hist(test.eps)
+eps.density <- density(test.eps)
+plot(eps.density)
+par(mfrow=c(1,1))
+
+# Cluster
+c(Left.Mean = mean(test.eps[test.eps < 0]), 
+  Right.Mean = mean(test.eps[test.eps > 0]))
+select.seq.unscrambled <- as.integer(test.eps > 0)
+head(select.seq.unscrambled, 30)
+
+ChoosePos <- function(j) {
+  vapply(seq_along(select.seq.unscrambled), 
+         function(i) {switch(select.seq.unscrambled[i] + 1, NA, dat[i, j])},
+         numeric(1))
+}
+
+ChooseNeg <- function(j) {
+  vapply(seq_along(select.seq.unscrambled), 
+         function(i) {switch(select.seq.unscrambled[i] + 1, dat[i, j], NA)},
+         numeric(1))
+}
+
+lm.subset1 <- sapply(seq_along(dat), ChoosePos)
+lm.subset2 <- sapply(seq_along(dat), ChooseNeg)
+
+head(cbind(lm.subset1, lm.subset2), 30)
+
+# Plot the two clusters
+matplot(dat$X, cbind(lm.subset1[, 2], lm.subset2[, 2]), 
+        type = "p", col = c("green", "blue"), pch = 19, ylab = "Separated Subsamples")
+
+plot(select.seq.unscrambled[1:100], type = "s")
+
+res <- list(Unscrambled.Selection.Sequence =  select.seq.unscrambled)
+write.table(res, file = 'result.csv', row.names = F)
+```
+
