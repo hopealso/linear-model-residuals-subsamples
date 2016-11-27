@@ -2,7 +2,10 @@
 title: "Statistical Analysis, MSCA 31007, Lecture 4"
 author: "Hope Foster-Reyes"
 date: "November 6, 2016"
-output: pdf_document
+output: 
+  pdf_document:
+    toc: true
+    toc_depth: 3
 geometry: margin=0.75in
 ---
 
@@ -136,7 +139,9 @@ The `Pr(>|t|)` column of the Coefficients section tells us the probability of ob
 
 It is worth noting that [R documentation](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/sigma.html) states that the term "residual standard error" that we see in our `summary` output is a misnomer, and the proper term is residual standard deviation.
 
-Our summary output includes this calculation of the residual standard deviation, or $\sigma$ as described below, as well as R-squared (also notated as $r^{2}$ or $\rho^{2}$) which is our "coefficient of determination" or "squared correlation coefficient". Whereas the correlation coefficient, "r" measures the strength and the direction of a linear relationship between two variables, the square of the correlation coefficient, "r squared", which we see in our summary, measures the proportion of our data that is explained by the linear relationship. Thus r-squared can be considered one estimate of the "predictive power" of our model. 
+Our summary output includes this calculation of the residual standard deviation, or $\sigma$ as described below, as well as R-squared (also notated as $r^{2}$ or $\rho^{2}$) which is our "coefficient of determination" or "squared correlation coefficient". 
+
+Whereas the correlation coefficient, "r" measures the strength and the direction of a linear relationship between two variables, the square of the correlation coefficient, "r squared", which we see in our summary, measures the proportion of our data that is explained by the linear relationship. Thus r-squared can be considered one estimate of the "predictive power" of our model. 
 
 In this case roughly 83% of the variation in our Output is explained by our linear model of:
 
@@ -414,26 +419,33 @@ apply(cbind(MixedModelResiduals=c(lm.subset1.est.summary$residuals,
 And let's do a final output table to make the data easier to compare:
 
 ```{r q4.1-table}
-t1.2 <- round(lm.est.summary$sigma, 4)
-t1.3 <- round(lm.subset1.est.summary$sigma, 4)
-t1.4 <- round(lm.subset2.est.summary$sigma, 4)
-t2.2 <- round(lm.est.summary$r.squared, 4)
-t2.3 <- round(lm.subset1.est.summary$r.squared, 4)
-t2.4 <- round(lm.subset2.est.summary$r.squared, 4)
-t3.2 <- round(lm.est.summary$coefficients[1,4], 4)
-t3.3 <- round(lm.subset1.est.summary$coefficients[1,4], 4)
-t3.4 <- round(lm.subset2.est.summary$coefficients[1,4], 4)
-t4.2 <- round(lm.est.summary$coefficients[2,4], 4)
-t4.3 <- round(lm.subset1.est.summary$coefficients[2,4], 4)
-t4.4 <- round(lm.subset2.est.summary$coefficients[2,4], 4)
+t00.2 <- round(lm.estimate$coefficients[1], 3)
+t00.3 <- round(lm.subset1.estimate$coefficients[1], 3)
+t00.4 <- round(lm.subset2.estimate$coefficients[1], 3)
+t01.2 <- round(lm.estimate$coefficients[2], 3)
+t01.3 <- round(lm.subset1.estimate$coefficients[2], 3)
+t01.4 <- round(lm.subset1.estimate$coefficients[2], 3)
+t1.2 <- round(lm.est.summary$sigma, 3)
+t1.3 <- round(lm.subset1.est.summary$sigma, 3)
+t1.4 <- round(lm.subset2.est.summary$sigma, 3)
+t2.2 <- round(lm.est.summary$r.squared, 3)
+t2.3 <- round(lm.subset1.est.summary$r.squared, 3)
+t2.4 <- round(lm.subset2.est.summary$r.squared, 3)
+t3.2 <- round(lm.est.summary$coefficients[1,4], 3)
+t3.3 <- round(lm.subset1.est.summary$coefficients[1,4], 3)
+t3.4 <- round(lm.subset2.est.summary$coefficients[1,4], 3)
+t4.2 <- round(lm.est.summary$coefficients[2,4], 3)
+t4.3 <- round(lm.subset1.est.summary$coefficients[2,4], 3)
+t4.4 <- round(lm.subset2.est.summary$coefficients[2,4], 3)
 t5.2 <- round(lm.est.summary$fstatistic[1])
 t5.3 <- round(lm.subset1.est.summary$fstatistic[1])
 t5.4 <- round(lm.subset2.est.summary$fstatistic[1])
 ```
 
-
 Estimate | Linear Model | Linear Model Positive | Linear Model Negative
 ---------|--------------|-----------------------|----------------------
+`r dimnames(lm.est.summary$coefficients)[[1]][1]` estimate | `r t00.2` | `r t00.3` | `r t00.4`
+`r dimnames(lm.est.summary$coefficients)[[1]][2]` estimate | `r t01.2` | `r t01.3` | `r t01.4`
 $\sigma_{\varepsilon}$ | `r t1.2` | `r t1.3` | `r t1.4`
 $\rho^{2}$ | `r t2.2` | `r t2.3` | `r t2.4`
 `r dimnames(lm.est.summary$coefficients)[[1]][1]` p-value | `r t3.2` | `r t3.3` | `r t3.4`
@@ -443,15 +455,71 @@ F p-value | `r round(lm.est.pf, 4)` | `r round(lm.subset1.est.pf, 4)` | `r round
 
 ***What is the difference between the quality of fit?***
 
-??? XXX ???
+#### Slope Coefficient P-Value
+
+The utility of a linear model is demonstrated in both cases, the single model and the mixed model. We see this in the extremely low p-value of our slope coefficient. The p-value in this case tests against the null hypothesis that the slope of the line is actually 0. If the slope of the line were truly zero, then our Output or response values would not vary predictably based on our Input or response values, since for a 0 sloped line y values would be constant with respect to x. Our extremely low p-values in both models suggest that the data in our sample would be extremely unlikely if the true distribution had a zero slope. Therefore we reject the null hypothesis that the data has no slope, and accept the likelihood that a linear model with our estimated slope(s) is useful in predicting our response variables.
+
+#### F Statistic P-Value
+
+This is also confirmed by the F-statistic p-value, which for both models is statistically significant. Unlike the t-tests of individual coefficients, the F-test can assess multiple coefficients simultaneously. The null hypothesis of the F-test is an intercept-only test, in other words testing whether *all* slope coefficients are zero in the true distribution. In this simple linear regression example, since we have only one slope coefficient (by virtue of having only one predictor variable) our F-statistic p-value and our Input coefficient p-value are the same test. Each of these show as zero in our rounded table above, but a quick glance back at the `lm()` output and F-statistic calculations for our Negative Model show that these are the same at `r lm.subset2.est.summary$fstatistic[1]`.
+
+#### Similarities vs. Differences
+
+So, we come to a conclusion that regardless of a single model or mixed models, a linear model has utility in representing our data and that it is highly unlikely that the Output variable of our true population does not vary according to some multiple (our slope coefficient) of our Input variable. Bearing in mind that -- assuming there is randomness in our population -- it is still possible that the relationship we see in the charts and our software has found in the data could **still** be a random alignment within the sample we happened to draw (That would be magical wouldn't it? But still possible and we should always keep this in mind.), we can move on to our most important question:
+
+What is the difference between the two, in terms of quality of fit?
+
+Since the difference is not found in our slope or F-statistic p-values, we move to the intercept p-value, r-squared statistic, and F-statistic. Each of these show discernable differences.
+
+#### F-Statistic
+
+The F-Statistic in simple linear regression is the ratio of the variance explained by the model and the residual or unexplained variance. As discussed above the p-value of our F-Statistics is extremely low in both the single model and mixed model solutions, but as we can see in the table above our F-statistic is roughly twice as large in our two subsets (Positive and Negative) as our F-statistic in our single model. Since we've split the data in half, essentially halving our variation, this makes sense.
+
+We can predict that if instead a single model, rather than a mixed model, were more accurate, the subsets would not demonstrate a twice improved F-statistic. Intuitively we can envision what this would look like: if the Output values were, in the true population, normally distributed about a single line, splitting that line in half as we have done in our mixed model would produce two sets of data whose values were clustered around the "bottom" in one and clustered about the "top" in the other. Thus their means would be pulled away from their center and their variability increased, reducing the predictive ability of the model and the ratio of the F-statistic.
+
+So, our higher F-statistics in the mixed model subsets tells us that these subsets do a better job of explaining the variation than a single model, intuitvely this makes sense as well, and we conclude that we are looking at two populations with the same slope (multiplier of Input to produce Output) but different intercepts (mean value) -- that is two different parallel lines on an xy-plot.
+
+#### Intercept P-Value
+
+Since our mixed model is based on the same slope for each subset but a differing intercept, it makes sense also that the intercept p-value would justify our use of the mixed model solution. This is a clear difference. For a single model, our intercept estimate is not significant. For our two subsets, it is.
+
+#### R-squared
+
+Our r-squared value is linked to our F-statistic, since a low p-value for our overall F-test leads us to conclude that the R-squared value is significantly different from zero. In this case we are comparing our single model with a mixed model, we can observe the difference in r-squared between the single model and our subsets. Here we see that r-squared is larger in our subsets, indicating that the portion of the variation explained by the subsets is greater than that defined by a single model.
 
 ***What is the difference between the two estimated models?***
 
-??? XXX ???
+What have we proved with our demonstration? As discussed above, all of our models are based on simple linear regression, and in all three cases the use of linear regression and the slope calculated in our tests demonstrate statistical significance.
+
+But only through noting the insignificant intercept estimate and visually examininng our residuals were we able to detect that two populations rather than one were seemingly represented in our data.
+
+The two new models we located differ from eachother and from the single model in *intercept estimate* only, the slope is the same for all three models.
 
 ***Try to guess how the model data were simulated and with what parameters?***
 
-??? XXX ???
+Based on an examination of our `lm()` results above, we guess that the Output data was simulated with a $\beta_{1}$ or slope of 0.8 for both, and a $\beta_{0}$ or intercept of $\pm$ 0.7. We'll also guess a standard deviation for our residuals of 0.4. So we ascribe to our two models the following equations:
+
+$Output\ 1 = 0.8 \cdot Input + 0.7 + \varepsilon$
+
+$Output\ 2 = 0.8 \cdot Input - 0.7 + \varepsilon$
+
+$\varepsilon \sim Norm(0, 0.4)$
+
+Let's plot this and compare.
+
+```{r final}
+subset.a <- 0.8
+subset1.b <- 0.7
+subset2.b <- -0.7
+subset.eps <- 0.4
+subset1.y.fit <- subset.a * sample.data$Input + subset1.b
+subset2.y.fit <- subset.a * sample.data$Input + subset2.b
+setset1.y <- subset1.y.fit + rnorm(1000, mean = 0, sd = subset.eps)
+setset2.y <- subset2.y.fit + rnorm(1000, mean = 0, sd = subset.eps)
+
+plot(sample.data$Input, subset1, ylim = c(-5, 5))
+```
+
 
 ## Test
 
