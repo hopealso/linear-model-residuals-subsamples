@@ -497,27 +497,49 @@ The two new models we located differ from eachother and from the single model in
 
 ***Try to guess how the model data were simulated and with what parameters?***
 
-Based on an examination of our `lm()` results above, we guess that the Output data was simulated with a $\beta_{1}$ or slope of 0.8 for both, and a $\beta_{0}$ or intercept of $\pm$ 0.7. We'll also guess a standard deviation for our residuals of 0.4. So we ascribe to our two models the following equations:
+Based on an examination of our `lm()` results above, we guess that the Output data was simulated with a slope of 0.8 for both, and a intercept of $\pm$ 0.7. We'll also guess a standard deviation for our residuals of 0.45. So we ascribe to our two models the following equations:
 
-$Output\ 1 = 0.8 \cdot Input + 0.7 + \varepsilon$
+$Output1 = 0.8 \cdot Input + 0.7 + \varepsilon$
 
-$Output\ 2 = 0.8 \cdot Input - 0.7 + \varepsilon$
+$Output2 = 0.8 \cdot Input - 0.7 + \varepsilon$
 
-$\varepsilon \sim Norm(0, 0.4)$
+$\varepsilon \sim Norm(0, 0.45)$
 
-Let's plot this and compare.
+An inspection of the Input variable leads us to believe that it was simulated as following:
+
+$Input \sim Unif(-4, 4)$
+
+Let's assume that our selection variable simply alternated between the two evenly. We can now reproduce our estimate of the simulation, plot, and compare.
+
+As seen below our guess at the parameters of the original simulation of our sample data may not be 100% accurate, but they clearly demonstrate similar characteristics to the original sample from `ResidualAnalysisProjectData_1.csv`.
 
 ```{r final}
-subset.a <- 0.8
+input <- runif(1000, -4, 4)
+output.a <- 0.8
 subset1.b <- 0.7
 subset2.b <- -0.7
-subset.eps <- 0.4
-subset1.y.fit <- subset.a * sample.data$Input + subset1.b
-subset2.y.fit <- subset.a * sample.data$Input + subset2.b
-setset1.y <- subset1.y.fit + rnorm(1000, mean = 0, sd = subset.eps)
-setset2.y <- subset2.y.fit + rnorm(1000, mean = 0, sd = subset.eps)
+output.eps <- 0.45
 
-plot(sample.data$Input, subset1, ylim = c(-5, 5))
+select.seq <- rep(c(0,1), 500)
+output.fit <- rep(NA, 1000)
+output.fit[select.seq == TRUE] <- output.a * input[select.seq == TRUE] + subset1.b
+output.fit[select.seq == FALSE] <- output.a * input[select.seq == FALSE] + subset2.b
+output <- output.fit + rnorm(1000, mean = 0, sd = output.eps)
+
+sim.data <- data.frame(Input = input, Output = output)
+lm.sim <- lm(Output ~ Input, sim.data)
+lm.sim.summary <- summary(lm.sim)
+
+title.orig <- "Original Sample"
+title.est <- "Estimated Simulation"
+par(mfrow=c(1,2))
+plot(sample.data$Input, sample.data$Output, ylim = c(-5, 5), main = title.orig)
+plot(input, output, ylim = c(-5, 5), main = title.est)
+plot(sample.data$Input, lm.estimate$residuals, ylim = c(-2,2), main = title.orig)
+plot(sim.data$Input, lm.sim$residuals, ylim = c(-2,2), main = title.est)
+plot(density(lm.estimate$residuals), ylim = c(0, 0.5), main = title.orig)
+plot(density(lm.sim$residuals), ylim = c(0, 0.5), main = title.est)
+par(mfrow=c(1,1))
 ```
 
 
